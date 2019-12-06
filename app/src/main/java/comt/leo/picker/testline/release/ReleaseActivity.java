@@ -1,22 +1,18 @@
 package comt.leo.picker.testline.release;
 
 import android.animation.ValueAnimator;
-import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
-import android.widget.RelativeLayout;
-import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -44,16 +40,13 @@ import comt.leo.picker.testline.release.view.StarAirLayout;
  * 4、根据此人关系的多小，在星空图上展示“不同大小”
  * 5、手指可放大缩小星空图，且随着展示关系的滑动，滑动区域改变
  * 6、判断放大缩小范围，优先展示关系多的，头像较大的人
- * */
+ */
 
 public class ReleaseActivity extends AppCompatActivity implements View.OnClickListener {
     private ScaleGestureDetector mScaleGestureDetector = null;
     StarAirLayout shaderImage;
     HVScrollView hvScrollView;
     private ArrayList<AtmanRelation> sourceList = new ArrayList<>();
-    TextView text_show_how;
-    RelativeLayout relative_seekbar;
-    SeekBar seekBar;
 
     private boolean moreFinger = false;//多指操作
     private int showWhat = 3;//当前显示的几度关系
@@ -107,9 +100,7 @@ public class ReleaseActivity extends AppCompatActivity implements View.OnClickLi
         sourceList = parseData(JsonData);//用Gson 转成实体
         Log.e("现在是否解析成了", sourceList.size() + "===================");
         shaderImage.setSourceList(sourceList);
-        seekBar.setProgress(2);
     }
-
 
     public ArrayList<AtmanRelation> parseData(String result) {//Gson 解析
         ArrayList<AtmanRelation> detail = new ArrayList<>();
@@ -126,32 +117,7 @@ public class ReleaseActivity extends AppCompatActivity implements View.OnClickLi
         return detail;
     }
 
-
     private void initListener() {
-        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                if (i == 0) {
-                    hvScrollView.smoothScrollTo(UIUtil.dip2px(ReleaseActivity.this, 2500) - UIUtil.getWidth() / 2, UIUtil.dip2px(ReleaseActivity.this, 2500) - UIUtil.getHeight() / 2);
-                }
-                clickAtmanRelation = null;
-                showWhat = i + 1;
-                shaderImage.setShowCount(i + 1);
-                text_show_how.setText("已显示" + (i + 1) + "°关系以内关系");
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
-            }
-        });
-
-
         hvScrollView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
@@ -198,7 +164,6 @@ public class ReleaseActivity extends AppCompatActivity implements View.OnClickLi
             hvScrollView.setOnScrollChangeListener(new View.OnScrollChangeListener() {
                 @Override
                 public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
-
                     if (shaderImage.getCanScrollBean() != null) {
                         int left_x = shaderImage.getCanScrollBean().getLeft_x().getX();
                         int lefy_y = shaderImage.getCanScrollBean().getLeft_top_y().getY();
@@ -236,13 +201,11 @@ public class ReleaseActivity extends AppCompatActivity implements View.OnClickLi
 
                         }
 
-
                         int minX_left = UIUtil.dip2px(ReleaseActivity.this, 2500) - UIUtil.getWidth() / 2;
                         int minY_left = UIUtil.dip2px(ReleaseActivity.this, 2500) - UIUtil.getHeight() / 2;
 
                         int minX_right = UIUtil.dip2px(ReleaseActivity.this, 2500) + UIUtil.getWidth() / 2;
                         int minY_right = UIUtil.dip2px(ReleaseActivity.this, 2500) + UIUtil.getHeight() / 2;
-
 
                         if (adddisX_left > minX_left) {
                             adddisX_left = minX_left;
@@ -258,7 +221,6 @@ public class ReleaseActivity extends AppCompatActivity implements View.OnClickLi
                         if (adddisY_right < minY_right) {
                             adddisY_right = minY_right;
                         }
-
 
                         if (scrollX <= adddisX_left && scrollY <= adddisY_left) {
                             hvScrollView.smoothScrollTo(adddisX_left, adddisY_left);
@@ -292,9 +254,6 @@ public class ReleaseActivity extends AppCompatActivity implements View.OnClickLi
         shaderImage = findViewById(R.id.shaderImage);
         shaderImage.setListener(this);
         hvScrollView = findViewById(R.id.hvScrollView);
-        text_show_how = findViewById(R.id.text_show_how);
-        relative_seekbar = findViewById(R.id.relative_seekbar);
-        seekBar = findViewById(R.id.seekBar);
     }
 
     private AtmanRelation clickAtmanRelation;
@@ -342,7 +301,6 @@ public class ReleaseActivity extends AppCompatActivity implements View.OnClickLi
         }
     }
 
-
     private float scale = 1;
     private float preScale = 1;// 默认前一次缩放比例为1
 
@@ -386,7 +344,7 @@ public class ReleaseActivity extends AppCompatActivity implements View.OnClickLi
         @Override
         public void onScaleEnd(ScaleGestureDetector detector) {
             preScale = scale;//记录本次缩放比例
-            int thisb = 40;
+            int thisb;
             if (scale >= 1.3) {
                 thisb = 25;
             } else if (scale < 1.3 && scale >= 1.2) {
@@ -431,9 +389,7 @@ public class ReleaseActivity extends AppCompatActivity implements View.OnClickLi
         }
     }
 
-
     public void tryScale(float current, float target) {
-
         ValueAnimator animator_shadow = ValueAnimator.ofFloat(current, target);
         animator_shadow.setDuration(200);
         animator_shadow.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
@@ -446,6 +402,5 @@ public class ReleaseActivity extends AppCompatActivity implements View.OnClickLi
             }
         });
         animator_shadow.start();
-
     }
 }
