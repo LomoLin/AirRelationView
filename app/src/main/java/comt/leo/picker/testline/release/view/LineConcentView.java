@@ -3,6 +3,7 @@ package comt.leo.picker.testline.release.view;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -24,7 +25,8 @@ public class LineConcentView extends View {
 
     //test
     private Paint mPaint;
-    private ArrayList<PointLeo> points;
+    private ArrayList<PointLeo> points = new ArrayList<>();
+    private Path mPath = new Path();
 
     public LineConcentView(Context context) {
         this(context, null);
@@ -37,8 +39,8 @@ public class LineConcentView extends View {
     public LineConcentView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        mPaint.setColor(getResources().getColor(R.color.color_luo));
-        mPaint.setStyle(Paint.Style.FILL);//设置填充样式
+        mPaint.setColor(getResources().getColor(R.color.color_mor));
+        mPaint.setStyle(Paint.Style.STROKE);//设置填充样式
         mPaint.setStrokeWidth(UIUtil.dip2px(getContext(), 1));//设置画笔宽度
     }
 
@@ -58,6 +60,7 @@ public class LineConcentView extends View {
         if (points != null) {
             for (int i = 0; i < points.size(); i++) {
                 PointLeo pointLeo = points.get(i);
+                mPath.reset();
                 if (pointLeo.getIsClickType().equals("高亮")) {
                     mPaint.setColor(getResources().getColor(R.color.color_luo));
                 } else if (pointLeo.getIsClickType().equals("暗色")) {
@@ -65,7 +68,10 @@ public class LineConcentView extends View {
                 } else if (pointLeo.getIsClickType().equals("默认显示")) {
                     mPaint.setColor(getResources().getColor(R.color.color_mor));
                 }
-                canvas.drawLine(pointLeo.getX(), pointLeo.getY(), pointLeo.getX1(), pointLeo.getY1(), mPaint);
+                mPath.moveTo(pointLeo.getX(), pointLeo.getY());
+                mPath.quadTo(pointLeo.getX() + (pointLeo.getX1() - pointLeo.getX()) * 0.58f, pointLeo.getY1(), pointLeo.getX1(), pointLeo.getY1());
+                canvas.drawPath(mPath, mPaint);
+//                canvas.drawLine(pointLeo.getX(), pointLeo.getY(), pointLeo.getX1(), pointLeo.getY1(), mPaint);
             }
         }
 
@@ -73,7 +79,8 @@ public class LineConcentView extends View {
 
 
     public void setLines(ArrayList<PointLeo> points) {
-        this.points = points;
+        this.points.clear();
+        this.points.addAll(points);
         Log.e("这里是几条线啊", points.size() + "======");
         invalidate();
     }

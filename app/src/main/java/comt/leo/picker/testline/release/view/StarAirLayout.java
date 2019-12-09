@@ -30,31 +30,28 @@ import comt.leo.picker.testline.release.bean.RelationBean;
 import comt.leo.picker.testline.release.bean.RelationParent;
 
 public class StarAirLayout extends FrameLayout {
-    FrameLayout layoutPoints;
+    private FrameLayout layoutPoints;
     private LineConcentView shaderImageView;
     private OnClickListener onClickListener;
+
+    private AtmanRelation myselfAtman;
 
     private CircleImageView image_theOne;
     private ArrayList<AtmanRelation> sourceList;
     private ArrayList<PointLeo> points = new ArrayList<>();//用于连线的。
     private ArrayList<RectPoint> rects = new ArrayList<>();//用于判断重叠的
-    private ArrayList<RelationBean> reList_2 = new ArrayList<>();//第二度关系的集合，目的是 为了绘制完一度后再绘制二度
-    private ArrayList<RelationBean> reList_3 = new ArrayList<>();//第三度关系的集合，目的是 绘制完二度再开始 三度
-    private ArrayList<RelationBean> reList_4 = new ArrayList<>();
-    private ArrayList<RelationBean> reList_5 = new ArrayList<>();
-    private ArrayList<RelationBean> reList_6 = new ArrayList<>();
+    private ArrayList<RelationBean> reList = new ArrayList<>();
+    private ArrayList<RelationBean> reList_next = new ArrayList<>();
     private ArrayList<AtmanRelation> clickList;//当前点击需要高亮的集合
+
+    private int degreeRelation = -1;
+    private int clickNode = -1;
+    private AtmanRelation nowClickAtmanRelation;
 
     /**
      * 这里好坑啊好坑啊
      */
     private ArrayList<AtmanRelation> otherLinePdList = new ArrayList<>();
-
-    private ArrayList<AtmanRelation> relation_source_2;
-    private ArrayList<AtmanRelation> relation_source_3;
-    private ArrayList<AtmanRelation> relation_source_4;
-    private ArrayList<AtmanRelation> relation_source_5;
-    private ArrayList<AtmanRelation> relation_source_6;
 
     private CanScrollBean canScrollBean;//用于判断可滑动的区域
     private int HavePic = 40;
@@ -107,8 +104,6 @@ public class StarAirLayout extends FrameLayout {
         }
     }
 
-    AtmanRelation myselfAtman;
-
     public void setSourceList(ArrayList<AtmanRelation> sourceList) {
         this.sourceList = sourceList;
         if (clickList != null) {
@@ -125,12 +120,6 @@ public class StarAirLayout extends FrameLayout {
         } else {//没有数据则不进行绘制
             return;
         }
-
-        relation_source_2 = getDeree(2);
-        relation_source_3 = getDeree(3);
-        relation_source_4 = getDeree(4);
-        relation_source_5 = getDeree(5);
-        relation_source_6 = getDeree(6);
 
         /**试试试试**/
         //找到自己这个点。并把中心点带入
@@ -155,10 +144,6 @@ public class StarAirLayout extends FrameLayout {
         addPoint();
     }
 
-    private int degreeRelation = -1;
-    private int clickNode = -1;
-    private AtmanRelation nowClickAtmanRelation;
-
     public void setClickList(ArrayList<AtmanRelation> clickList, int degreeRelation, int clickNode, AtmanRelation nowClickAtmanRelation) {
         isShowClickAnim = true;
         this.clickList = clickList;
@@ -168,7 +153,6 @@ public class StarAirLayout extends FrameLayout {
 
         addPoint();
     }
-
 
     //这是手指放大缩小运行的
     public void setClickListScale(ArrayList<AtmanRelation> clickList, int degreeRelation, int clickNode, AtmanRelation nowClickAtmanRelation) {
@@ -196,8 +180,6 @@ public class StarAirLayout extends FrameLayout {
         for (int i = 0; i < sourceList.size(); i++) {
             if (sourceList.get(i).getDegree() == Deree) {
                 arrayList.add(sourceList.get(i));
-                if (Deree == 1 || Deree == 0) {
-                }
             }
         }
         return arrayList;
@@ -252,11 +234,8 @@ public class StarAirLayout extends FrameLayout {
     public void addPoint() {
         points.clear();
         rects.clear();
-        reList_2.clear();
-        reList_3.clear();
-        reList_4.clear();
-        reList_5.clear();
-        reList_6.clear();
+        reList.clear();
+        reList_next.clear();
         otherLinePdList.clear();
         layoutPoints.removeAllViews();
         canScrollBean = new CanScrollBean();//用于判断可滑动的区域
@@ -289,12 +268,7 @@ public class StarAirLayout extends FrameLayout {
                 textView.setTextSize(UIUtil.dip2px(getContext(), 4));
                 textView.setGravity(Gravity.CENTER);
                 if (!TextUtils.isEmpty(myselfAtman.getNickName())) {
-//                    if (myselfAtman.getNickName().length() > 6) {
-//                        String newStr = myselfAtman.getNickName().substring(0, 6);
-//                        textView.setText(newStr + "...");
-//                    } else {
-                        textView.setText(myselfAtman.getNickName());
-//                    }
+                    textView.setText(myselfAtman.getNickName());
                 }
                 layoutPoints.addView(textView, leoParams_text);
             }
@@ -348,7 +322,7 @@ public class StarAirLayout extends FrameLayout {
 
             }
 
-            int objectBig = 0;//当前控件的大小
+            int objectBig;//当前控件的大小
             int num = itemBean.getSonCount() + itemBean.getParentGroups().size();
             objectBig = 25 + num - 1;
 
@@ -423,12 +397,7 @@ public class StarAirLayout extends FrameLayout {
                         textView.setTextSize(UIUtil.dip2px(getContext(), 4));
                         textView.setGravity(Gravity.CENTER);
                         if (!TextUtils.isEmpty(itemBean.getNickName())) {
-//                            if (itemBean.getNickName().length() > 6) {
-//                                String newStr = itemBean.getNickName().substring(0, 6);
-//                                textView.setText(newStr + "...");
-//                            } else {
-                                textView.setText(itemBean.getNickName());
-//                            }
+                            textView.setText(itemBean.getNickName());
                         }
 
                         layoutPoints.addView(textView, leoParams_text);
@@ -453,7 +422,7 @@ public class StarAirLayout extends FrameLayout {
                 ArrayList<AtmanRelation> sonList = getSonList(itemBean);//一度节点下二度的关系集合
                 if (sonList.size() > 0) {
                     int numberNex = sonList.size();//下一层关系有几个。（注意这里下一层的一度关系是不包括父类的。而且算角度的时候要加个1）
-                    reList_2.add(new RelationBean(circle, numberNex, X1, Y1, currentJD + firstJD + 180, 2, sonList));//倒数第二个参数，第几度关系
+                    reList.add(new RelationBean(circle, numberNex, X1, Y1, currentJD + firstJD + 180, 2, sonList));
                 }
 
                 if (onClickListener != null) {
@@ -463,9 +432,9 @@ public class StarAirLayout extends FrameLayout {
             }
 
             if (i == number - 1) {//这里显示二度
-                if (reList_2.size() > 0) {
-                    for (int j = 0; j < reList_2.size(); j++) {
-                        RelationBean relationBean = reList_2.get(j);
+                if (reList.size() > 0) {
+                    for (int j = 0; j < reList.size(); j++) {
+                        RelationBean relationBean = reList.get(j);
                         if (relationBean.getNumberNex() > 0) {
                             addNexAbout(relationBean.getCircle(), relationBean.getNumberNex(), relationBean.getX1(), relationBean.getY1(), relationBean.getTrueJD(), relationBean.getRelation(), relationBean.getAtmanRelations(), j);
                         }
@@ -478,7 +447,6 @@ public class StarAirLayout extends FrameLayout {
 
     @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
     public void addNexAbout(int circleNex, int numberNex, int x_centerNex, int y_centerNex, int nowJD, int relation, ArrayList<AtmanRelation> atmanRelations, int index) {
-
         int circle = circleNex;//半径的长度
         int number = numberNex + 1;//当前关系个数。当然要加上父类那条线
         int x_center = x_centerNex;//目前坐标中心点
@@ -498,8 +466,8 @@ public class StarAirLayout extends FrameLayout {
             int currentJD = trueJD + jiaod * (i + 1);
             Log.i("为什么二度关系这里有问题了呢", currentJD + "=========");
 
-            int X1 = 0;
-            int Y1 = 0;
+            int X1;
+            int Y1;
             if (currentJD != 0 && currentJD != 180 && currentJD != 360) {//别面有错误出现
                 X1 = (int) (x_center + circle * (Math.cos(Math.PI * currentJD / 180)));
                 Y1 = (int) (y_center + circle * (Math.sin(Math.PI * currentJD / 180)));
@@ -513,7 +481,7 @@ public class StarAirLayout extends FrameLayout {
                 }
             }
 
-            int objectBig = 0;//当前控件的大小
+            int objectBig;//当前控件的大小
             int num = itemBean.getSonCount() + itemBean.getParentGroups().size();
             objectBig = 25 + num - 1;
 
@@ -529,7 +497,6 @@ public class StarAirLayout extends FrameLayout {
                 repetAdd(x_center, y_center, circle, currentJD, relation, itemBean);
 
             } else { //false 没有重叠，则直接添加
-
                 CircleImageView imageView_bottom_yy = new CircleImageView(getContext());
                 imageView_bottom_yy.setId(R.id.image_theOne);
                 LayoutParams leoParams_bottom_yy = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -608,12 +575,7 @@ public class StarAirLayout extends FrameLayout {
                         textView.setTextSize(UIUtil.dip2px(getContext(), 4));
                         textView.setGravity(Gravity.CENTER);
                         if (!TextUtils.isEmpty(itemBean.getNickName())) {
-//                            if (itemBean.getNickName().length() > 6) {
-//                                String newStr = itemBean.getNickName().substring(0, 6);
-//                                textView.setText(newStr + "...");
-//                            } else {
-                                textView.setText(itemBean.getNickName());
-//                            }
+                            textView.setText(itemBean.getNickName());
                         }
                         layoutPoints.addView(textView, leoParams_text);
                     }
@@ -632,31 +594,10 @@ public class StarAirLayout extends FrameLayout {
                 /**
                  * 这里是添加成功关系以后，进行的下一层 关系的绘制
                  * */
-                if (relation == 2) {//保证当前的节点是在2度关系的节点下，才添加3度关系
-                    ArrayList<AtmanRelation> sonList = getSonList(itemBean);//一度节点下二度的关系集合
-                    if (sonList.size() > 0) {
-                        int numbSon = sonList.size();//下一层关系有几个。（注意这里下一层的一度关系是不包括父类的。而且算角度的时候要加个1）
-                        reList_3.add(new RelationBean(circle, numbSon, X1, Y1, currentJD + 180, 3, sonList));//倒数第二个参数，第几度关系
-                    }
-                } else if (relation == 3) {//保证当前的节点在3度下，才能添加4度关系
-                    ArrayList<AtmanRelation> sonList = getSonList(itemBean);
-                    Log.e("四度关系问题", sonList.size() + "======");
-                    if (sonList.size() > 0) {
-                        int numbSon = sonList.size();
-                        reList_4.add(new RelationBean(circle, numbSon, X1, Y1, currentJD + 180, 4, sonList));//倒数第二个参数，第几度关系
-                    }
-                } else if (relation == 4) {//当前节点是4 才能添加5度关系
-                    ArrayList<AtmanRelation> sonList = getSonList(itemBean);
-                    if (sonList.size() > 0) {
-                        int numbSon = sonList.size();
-                        reList_5.add(new RelationBean(circle, numbSon, X1, Y1, currentJD + 180, 5, sonList));//倒数第二个参数，第几度关系
-                    }
-                } else if (relation == 5) {//当前节点是5 才能添加6度关系
-                    ArrayList<AtmanRelation> sonList = getSonList(itemBean);
-                    if (sonList.size() > 0) {
-                        int numbSon = sonList.size();
-                        reList_6.add(new RelationBean(circle, numbSon, X1, Y1, currentJD + 180, 6, sonList));//倒数第二个参数，第几度关系
-                    }
+                ArrayList<AtmanRelation> sonList = getSonList(itemBean);//一度节点下二度的关系集合
+                if (sonList.size() > 0) {
+                    int numbSon = sonList.size();//下一层关系有几个。（注意这里下一层的一度关系是不包括父类的。而且算角度的时候要加个1）
+                    reList_next.add(new RelationBean(circle, numbSon, X1, Y1, currentJD + 180, relation + 1, sonList));//倒数第二个参数，第几度关系
                 }
 
                 if (onClickListener != null) {
@@ -664,65 +605,16 @@ public class StarAirLayout extends FrameLayout {
                     imageView_bottom_yy.setOnClickListener(onClickListener);
                 }
             }
-            if (relation == 2) {//这里是启动绘制。将二度全部绘制完成后，才绘制3度
-                if (index == reList_2.size() - 1 && i == numberNex - 1) {
-                    otherLinePdList.addAll(relation_source_2);
-                    if (reList_3.size() > 0) {
-                        for (int j = 0; j < reList_3.size(); j++) {
-                            RelationBean relationBean = reList_3.get(j);
-                            if (relationBean.getNumberNex() > 0) {
-                                addNexAbout(relationBean.getCircle(), relationBean.getNumberNex(), relationBean.getX1(), relationBean.getY1(), relationBean.getTrueJD(), relationBean.getRelation(), relationBean.getAtmanRelations(), j);
-                            }
-                        }
-                    } else {
-                        otherLinePdList.addAll(relation_source_2);
-                    }
-                }
-            } else if (relation == 3) {
-                if (index == reList_3.size() - 1 && i == numberNex - 1) {
-                    otherLinePdList.addAll(relation_source_3);
-                    if (reList_4.size() > 0) {
-                        for (int j = 0; j < reList_4.size(); j++) {
-                            RelationBean relationBean = reList_4.get(j);
-                            if (relationBean.getNumberNex() > 0) {
-                                addNexAbout(relationBean.getCircle(), relationBean.getNumberNex(), relationBean.getX1(), relationBean.getY1(), relationBean.getTrueJD(), relationBean.getRelation(), relationBean.getAtmanRelations(), j);
-                            }
-                        }
-                    } else {
-                        otherLinePdList.addAll(relation_source_3);
-                        Log.i("天呐的小bug", "显示4度，但是4度没有集合");
-                    }
-                }
-            } else if (relation == 4) {
-                if (index == reList_4.size() - 1 && i == numberNex - 1) {
-                    otherLinePdList.addAll(relation_source_4);
-                    if (reList_5.size() > 0) {
-                        for (int j = 0; j < reList_5.size(); j++) {
-                            RelationBean relationBean = reList_5.get(j);
-                            if (relationBean.getNumberNex() > 0) {
-                                addNexAbout(relationBean.getCircle(), relationBean.getNumberNex(), relationBean.getX1(), relationBean.getY1(), relationBean.getTrueJD(), relationBean.getRelation(), relationBean.getAtmanRelations(), j);
-                            }
-                        }
-                    } else {
-                        otherLinePdList.addAll(relation_source_4);
-                    }
-                }
-            } else if (relation == 5) {
-                if (index == reList_5.size() - 1 && i == numberNex - 1) {
-                    otherLinePdList.addAll(relation_source_5);
-                    if (reList_6.size() > 0) {
-                        for (int j = 0; j < reList_6.size(); j++) {
-                            RelationBean relationBean = reList_6.get(j);
-                            if (relationBean.getNumberNex() > 0) {
-                                addNexAbout(relationBean.getCircle(), relationBean.getNumberNex(), relationBean.getX1(), relationBean.getY1(), relationBean.getTrueJD(), relationBean.getRelation(), relationBean.getAtmanRelations(), j);
-                            }
-                            if (j == reList_6.size() - 1) {//展示完6度最后一个添加证据
-                                otherLinePdList.addAll(relation_source_6);
-                            }
-                        }
-                    } else {
-                        otherLinePdList.addAll(relation_source_5);
-                        Log.i("天呐的小bug", "显示6度，但是6度没有集合");
+
+            if (index == reList.size() - 1 && i == numberNex - 1) {
+                otherLinePdList.addAll(getDeree(relation));
+                reList.clear();
+                reList.addAll(reList_next);
+                reList_next.clear();
+                for (int j = 0; j < reList.size(); j++) {
+                    RelationBean relationBean = reList.get(j);
+                    if (relationBean.getNumberNex() > 0) {
+                        addNexAbout(relationBean.getCircle(), relationBean.getNumberNex(), relationBean.getX1(), relationBean.getY1(), relationBean.getTrueJD(), relationBean.getRelation(), relationBean.getAtmanRelations(), j);
                     }
                 }
             }
@@ -748,7 +640,7 @@ public class StarAirLayout extends FrameLayout {
             }
         }
 
-        int objectBig = 0;//当前控件的大小
+        int objectBig;//当前控件的大小
         int num = itemBean.getSonCount() + itemBean.getParentGroups().size();
         objectBig = 25 + num - 1;
         int trueX1 = X1 - UIUtil.dip2px(getContext(), objectBig / 2);//减去自身控件的长度
@@ -848,12 +740,7 @@ public class StarAirLayout extends FrameLayout {
                     textView.setTextSize(UIUtil.dip2px(getContext(), 4));
                     textView.setGravity(Gravity.CENTER);
                     if (!TextUtils.isEmpty(itemBean.getNickName())) {
-//                        if (itemBean.getNickName().length() > 6) {
-//                            String newStr = itemBean.getNickName().substring(0, 6);
-//                            textView.setText(newStr + "...");
-//                        } else {
-                            textView.setText(itemBean.getNickName());
-//                        }
+                        textView.setText(itemBean.getNickName());
                     }
                     layoutPoints.addView(textView, leoParams_text);
                 }
@@ -867,60 +754,15 @@ public class StarAirLayout extends FrameLayout {
             itemBean.setRectPoint(new RectPoint(trueX1 - UIUtil.dip2px(getContext(), objectBig / 2), trueY1 - UIUtil.dip2px(getContext(), objectBig / 2),
                     trueX1 + UIUtil.dip2px(getContext(), objectBig / 2), trueY1 + UIUtil.dip2px(getContext(), objectBig / 2)));
             rects.add(leoPoint);
-
-            if (relation == 1) {//当前是一度关系的节点，才能添加二度
-                ArrayList<AtmanRelation> sonList = getSonList(itemBean);//一度节点下二度的关系集合
-                if (sonList.size() > 0) {
-                    int numberNex = sonList.size();//下一层关系有几个。（注意这里下一层的一度关系是不包括父类的。而且算角度的时候要加个1）
-                    reList_2.add(new RelationBean(circle, numberNex, X1, Y1, currentJD + 180, 2, sonList));//倒数第二个参数，第几度关系
-                }
-                if (onClickListener != null) {
-                    imageView_bottom_yy.setTag(R.id.image_theOne, itemBean);
-                    imageView_bottom_yy.setOnClickListener(onClickListener);
-                }
-            } else if (relation == 2) {
-                ArrayList<AtmanRelation> sonList = getSonList(itemBean);//一度节点下二度的关系集合
-                if (sonList.size() > 0) {
-                    int numberNex = sonList.size();//下一层关系有几个。（注意这里下一层的一度关系是不包括父类的。而且算角度的时候要加个1）
-                    reList_3.add(new RelationBean(circle, numberNex, X1, Y1, currentJD + 180, 3, sonList));//倒数第二个参数，第几度关系
-                }
-                if (onClickListener != null) {
-                    imageView_bottom_yy.setTag(R.id.image_theOne, itemBean);
-                    imageView_bottom_yy.setOnClickListener(onClickListener);
-                }
-            } else if (relation == 3) {
-                ArrayList<AtmanRelation> sonList = getSonList(itemBean);//一度节点下二度的关系集合
-                Log.e("四度关系问题", sonList.size() + "++++++++++++++++++");
-                if (sonList.size() > 0) {
-                    int numberNex = sonList.size();//下一层关系有几个。（注意这里下一层的一度关系是不包括父类的。而且算角度的时候要加个1）
-                    reList_4.add(new RelationBean(circle, numberNex, X1, Y1, currentJD + 180, 4, sonList));//倒数第二个参数，第几度关系
-                }
-                if (onClickListener != null) {
-                    imageView_bottom_yy.setTag(R.id.image_theOne, itemBean);
-                    imageView_bottom_yy.setOnClickListener(onClickListener);
-                }
-            } else if (relation == 4) {
-                ArrayList<AtmanRelation> sonList = getSonList(itemBean);//一度节点下二度的关系集合
-                Log.e("四度关系问题", sonList.size() + "++++++++++++++++++");
-                if (sonList.size() > 0) {
-                    int numberNex = sonList.size();//下一层关系有几个。（注意这里下一层的一度关系是不包括父类的。而且算角度的时候要加个1）
-                    reList_5.add(new RelationBean(circle, numberNex, X1, Y1, currentJD + 180, 5, sonList));//倒数第二个参数，第几度关系
-                }
-                if (onClickListener != null) {
-                    imageView_bottom_yy.setTag(R.id.image_theOne, itemBean);
-                    imageView_bottom_yy.setOnClickListener(onClickListener);
-                }
-            } else if (relation == 5) {
-                ArrayList<AtmanRelation> sonList = getSonList(itemBean);//一度节点下二度的关系集合
-                Log.e("四度关系问题", sonList.size() + "++++++++++++++++++");
-                if (sonList.size() > 0) {
-                    int numberNex = sonList.size();//下一层关系有几个。（注意这里下一层的一度关系是不包括父类的。而且算角度的时候要加个1）
-                    reList_6.add(new RelationBean(circle, numberNex, X1, Y1, currentJD + 180, 6, sonList));//倒数第二个参数，第几度关系
-                }
-                if (onClickListener != null) {
-                    imageView_bottom_yy.setTag(R.id.image_theOne, itemBean);
-                    imageView_bottom_yy.setOnClickListener(onClickListener);
-                }
+//
+            ArrayList<AtmanRelation> sonList = getSonList(itemBean);//一度节点下二度的关系集合
+            if (sonList.size() > 0) {
+                int numberNex = sonList.size();//下一层关系有几个。（注意这里下一层的一度关系是不包括父类的。而且算角度的时候要加个1）
+                reList.add(new RelationBean(circle, numberNex, X1, Y1, currentJD + 180, relation + 1, sonList));//倒数第二个参数，第几度关系
+            }
+            if (onClickListener != null) {
+                imageView_bottom_yy.setTag(R.id.image_theOne, itemBean);
+                imageView_bottom_yy.setOnClickListener(onClickListener);
             }
         }
     }
